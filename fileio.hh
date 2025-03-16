@@ -10,7 +10,7 @@
 namespace FileIO {
     namespace fs = std::filesystem;
 
-    // Get all files from the current directory
+    // Get all files from a directory
     std::vector<std::string> getFilesInDirectory(const std::string& path = ".") {
         std::vector<std::string> files;
         for (const auto& entry : fs::directory_iterator(path)) {
@@ -21,15 +21,43 @@ namespace FileIO {
         return files;
     }
 
+    // Get all directories from a directory
+    std::vector<std::string> getDirectoriesInDirectory(const std::string& path = ".") {
+        std::vector<std::string> directories;
+        for (const auto& entry : fs::directory_iterator(path)) {
+            if (fs::is_directory(entry.path())) {
+                directories.push_back(entry.path().string());
+            }
+        }
+        return directories;
+    }
+
     // Check if a file exists
     bool fileExists(const std::string& filename) {
-        return fs::exists(filename);
+        return fs::exists(filename) && fs::is_regular_file(filename);
+    }
+
+    // Check if a directory exists
+    bool directoryExists(const std::string& dirname) {
+        return fs::exists(dirname) && fs::is_directory(dirname);
     }
 
     // Get file size
     std::uintmax_t getFileSize(const std::string& filename) {
         if (!fileExists(filename)) return 0;
         return fs::file_size(filename);
+    }
+
+    // Get total directory size (recursive)
+    std::uintmax_t getDirectorySize(const std::string& dirname) {
+        if (!directoryExists(dirname)) return 0;
+        std::uintmax_t totalSize = 0;
+        for (const auto& entry : fs::recursive_directory_iterator(dirname)) {
+            if (fs::is_regular_file(entry.path())) {
+                totalSize += fs::file_size(entry.path());
+            }
+        }
+        return totalSize;
     }
 
     // Read entire file content into a string
@@ -64,12 +92,17 @@ namespace FileIO {
 
     // Delete a file
     bool deleteFile(const std::string& filename) {
-        return fs::remove(filename);
+        return fileExists(filename) && fs::remove(filename);
     }
 
     // Create a directory
     bool createDirectory(const std::string& dirName) {
         return fs::create_directory(dirName);
+    }
+
+    // Delete a directory (recursively)
+    bool deleteDirectory(const std::string& dirName) {
+        return directoryExists(dirName) && fs::remove_all(dirName) > 0;
     }
 }
 
